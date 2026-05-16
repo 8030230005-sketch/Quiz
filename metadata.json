@@ -1,0 +1,6 @@
+{
+  "name": "Smart Home IoT Dashboard",
+  "description": "Modern web dashboard for smart home monitoring and control, featuring ESP32 integration, DHT11 sensors, and Telegram Bot notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

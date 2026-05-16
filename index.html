@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home IoT Dashboard</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-dark text-white font-sans overflow-x-hidden">
+    <div id="loader" class="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar fixed top-0 left-0 h-full w-20 md:w-64 z-40 flex flex-col items-center py-8 transition-all duration-300">
+        <div class="logo mb-12 px-4 flex items-center gap-3">
+            <div class="bg-accent rounded-xl p-2 shadow-glow">
+                <i data-lucide="home" class="w-6 h-6 text-white"></i>
+            </div>
+            <span class="hidden md:block font-bold text-xl tracking-tight">SMART<span class="text-accent">IOT</span></span>
+        </div>
+        
+        <div class="flex-1 flex flex-col gap-4 w-full px-4">
+            <a href="#" class="nav-item active flex items-center gap-4 p-4 rounded-2xl group">
+                <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                <span class="hidden md:block font-medium">Dashboard</span>
+            </a>
+            <a href="#" class="nav-item flex items-center gap-4 p-4 rounded-2xl group text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+                <span class="hidden md:block font-medium">Analytics</span>
+            </a>
+            <a href="#" class="nav-item flex items-center gap-4 p-4 rounded-2xl group text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+                <span class="hidden md:block font-medium">Settings</span>
+            </a>
+        </div>
+
+        <div class="w-full px-4 mt-auto">
+            <div id="api-status" class="status-indicator online rounded-2xl p-4 flex items-center gap-4">
+                <div class="dot w-2 h-2 rounded-full"></div>
+                <span class="hidden md:block text-xs font-mono uppercase tracking-widest opacity-70">API Connected</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="ml-20 md:ml-64 p-4 md:p-8 min-h-screen transition-all duration-300">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div>
+                <h1 class="text-3xl font-bold mb-1">Home Overview</h1>
+                <p id="realtime-clock" class="text-gray-400 font-mono"></p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="glass flex items-center gap-4 p-2 px-4 rounded-full border border-white/5">
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs opacity-50 uppercase font-semibold">ESP32 Status</span>
+                        <span id="esp32-status" class="text-xs text-green-400 font-bold">ONLINE</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-green-400/10 flex items-center justify-center">
+                        <i data-lucide="cpu" class="w-5 h-5 text-green-400"></i>
+                    </div>
+                </div>
+                <div class="glass flex items-center gap-4 p-2 px-4 rounded-full border border-white/5">
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs opacity-50 uppercase font-semibold">Bot Status</span>
+                        <span id="bot-status" class="text-xs text-green-400 font-bold">ACTIVE</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-green-400/10 flex items-center justify-center">
+                        <i data-lucide="bot" class="w-5 h-5 text-green-400"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card p-6 rounded-3xl border border-white/5 group hover:border-accent/30 transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                        <i data-lucide="thermometer" class="w-6 h-6 text-blue-400"></i>
+                    </div>
+                    <span class="text-xs font-mono text-gray-500 uppercase">Temperature</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="temp-val" class="text-4xl font-bold tracking-tight">26.5</span>
+                    <span class="text-xl text-gray-500 font-medium">°C</span>
+                </div>
+                <div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-400 transition-all duration-1000" style="width: 65%;"></div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl border border-white/5 group hover:border-accent/30 transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                        <i data-lucide="droplets" class="w-6 h-6 text-cyan-400"></i>
+                    </div>
+                    <span class="text-xs font-mono text-gray-500 uppercase">Humidity</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="humidity-val" class="text-4xl font-bold tracking-tight">60</span>
+                    <span class="text-xl text-gray-500 font-medium">%</span>
+                </div>
+                <div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-cyan-400 transition-all duration-1000" style="width: 60%;"></div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl border border-white/5 group hover:border-accent/30 transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-6 h-6 text-orange-400"></i>
+                    </div>
+                    <span class="text-xs font-mono text-gray-500 uppercase">Power Load</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-4xl font-bold tracking-tight">1.2</span>
+                    <span class="text-xl text-gray-500 font-medium">kW</span>
+                </div>
+                <div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-orange-400 transition-all duration-1000" style="width: 45%;"></div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl border border-white/5 group hover:border-accent/30 transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-purple-400"></i>
+                    </div>
+                    <span class="text-xs font-mono text-gray-500 uppercase">Active Relays</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="active-relays-count" class="text-4xl font-bold tracking-tight">0</span>
+                    <span class="text-xl text-gray-500 font-medium">/ 4</span>
+                </div>
+                <div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div id="relays-progress" class="h-full bg-purple-400 transition-all duration-1000" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Relay Controls -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="toggle-right" class="w-5 h-5 text-accent"></i>
+                    Smart Switch
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Relay 1 -->
+                    <div class="relay-card p-6 rounded-[2rem] glass transition-all duration-300 border border-white/5 cursor-pointer relative overflow-hidden" data-id="1">
+                        <div class="relative z-10">
+                            <i data-lucide="lightbulb" class="w-6 h-6 mb-4 text-gray-500 relay-icon"></i>
+                            <h3 class="font-bold text-lg mb-1">Lamp 1</h3>
+                            <span class="text-xs font-mono uppercase tracking-widest opacity-50 relay-status">OFF</span>
+                        </div>
+                        <div class="relay-glow absolute inset-0 opacity-0 transition-opacity duration-300"></div>
+                    </div>
+                    <!-- Relay 2 -->
+                    <div class="relay-card p-6 rounded-[2rem] glass transition-all duration-300 border border-white/5 cursor-pointer relative overflow-hidden" data-id="2">
+                        <div class="relative z-10">
+                            <i data-lucide="fan" class="w-6 h-6 mb-4 text-gray-500 relay-icon"></i>
+                            <h3 class="font-bold text-lg mb-1">Fan Unit</h3>
+                            <span class="text-xs font-mono uppercase tracking-widest opacity-50 relay-status">OFF</span>
+                        </div>
+                        <div class="relay-glow absolute inset-0 opacity-0 transition-opacity duration-300"></div>
+                    </div>
+                    <!-- Relay 3 -->
+                    <div class="relay-card p-6 rounded-[2rem] glass transition-all duration-300 border border-white/5 cursor-pointer relative overflow-hidden" data-id="3">
+                        <div class="relative z-10">
+                            <i data-lucide="air-vent" class="w-6 h-6 mb-4 text-gray-500 relay-icon"></i>
+                            <h3 class="font-bold text-lg mb-1">AC Main</h3>
+                            <span class="text-xs font-mono uppercase tracking-widest opacity-50 relay-status">OFF</span>
+                        </div>
+                        <div class="relay-glow absolute inset-0 opacity-0 transition-opacity duration-300"></div>
+                    </div>
+                    <!-- Relay 4 -->
+                    <div class="relay-card p-6 rounded-[2rem] glass transition-all duration-300 border border-white/5 cursor-pointer relative overflow-hidden" data-id="4">
+                        <div class="relative z-10">
+                            <i data-lucide="power" class="w-6 h-6 mb-4 text-gray-500 relay-icon"></i>
+                            <h3 class="font-bold text-lg mb-1">Outlet 4</h3>
+                            <span class="text-xs font-mono uppercase tracking-widest opacity-50 relay-status">OFF</span>
+                        </div>
+                        <div class="relay-glow absolute inset-0 opacity-0 transition-opacity duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Logs -->
+                <div>
+                   <h2 class="text-xl font-bold flex items-center gap-2 mb-4">
+                        <i data-lucide="list-todo" class="w-5 h-5 text-accent"></i>
+                        Activity Logs
+                    </h2>
+                    <div class="glass-card rounded-[2rem] p-4 max-h-[300px] overflow-y-auto border border-white/5 custom-scrollbar">
+                        <div id="activity-logs" class="flex flex-col gap-3">
+                            <div class="text-sm text-gray-500 italic p-4 text-center">Loading logs...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart & Telegram -->
+            <div class="lg:col-span-8 flex flex-col gap-8">
+                <!-- Main Chart -->
+                <div class="glass-card rounded-[3rem] p-8 border border-white/5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl font-bold">Environmental Data</h2>
+                            <p class="text-gray-400 text-sm">Real-time DHT11 Sensor History</p>
+                        </div>
+                        <div class="flex gap-2">
+                             <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                                <span class="text-xs font-bold text-blue-400">Temp</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                <span class="text-xs font-bold text-cyan-400">Humidity</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative h-[400px]">
+                        <canvas id="sensorChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Telegram Integration -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div class="glass-card rounded-[2.5rem] p-6 border border-white/5 flex flex-col">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <i data-lucide="message-square" class="w-5 h-5 text-[#24A1DE]"></i>
+                                Telegram Bot
+                            </h2>
+                            <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 uppercase">Online</span>
+                        </div>
+                        <div class="bg-black/20 rounded-2xl p-4 flex-1 font-mono text-sm overflow-y-auto custom-scrollbar" id="telegram-console">
+                            <div class="opacity-50 mb-2">Ready for commands...</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-[2.5rem] p-6 border border-white/5 flex flex-col justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold flex items-center gap-2 mb-2">
+                                <i data-lucide="info" class="w-5 h-5 text-accent"></i>
+                                System Specs
+                            </h2>
+                            <div class="space-y-4 mt-6">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-400">Hardware</span>
+                                    <span class="font-bold">ESP32 DevKit V1</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-400">Firmware</span>
+                                    <span class="font-bold">v2.0.4-stable</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-400">Sensors</span>
+                                    <span class="font-bold italic">DHT11 / 4x Relay</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-400">Protocol</span>
+                                    <span class="font-bold">WebSockets & REST</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full mt-6 bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2">
+                             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                             Restart Controller
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 right-8 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <div class="glass border border-white/10 p-4 px-6 rounded-2xl flex items-center gap-4 shadow-2xl">
+            <div id="toast-icon" class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                <i data-lucide="info" class="w-4 h-4 text-accent"></i>
+            </div>
+            <p id="toast-message" class="font-medium text-sm"></p>
+        </div>
+    </div>
+
+    <!-- Background Decoration -->
+    <div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+        <div class="absolute top-[10%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-accent/10 blur-[120px]"></div>
+        <div class="absolute bottom-[20%] right-[10%] w-[30vw] h-[30vw] rounded-full bg-blue-500/10 blur-[120px]"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
