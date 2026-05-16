@@ -44,25 +44,23 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // CORS MUST BE FIRST
   app.use(cors());
   app.use(express.json());
 
   // Request logging
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log(`[Server Log] ${req.method} ${req.url}`);
     next();
   });
 
   // --- API ROUTES ---
-  console.log("[Server] Registering API routes...");
-
+  // Ensure these are defined BEFORE any static or vite middleware
   app.get("/api/health", (req, res) => {
-    console.log("[Server] Hit /api/health");
     res.json({ status: "ok", time: new Date().toISOString() });
   });
 
   app.get("/api/dht", (req, res) => {
-    console.log("[Server] Hit /api/dht");
     state.sensor.temp += (Math.random() - 0.5) * 0.5;
     state.sensor.humidity += (Math.random() - 0.5) * 1;
     res.json(state.sensor);

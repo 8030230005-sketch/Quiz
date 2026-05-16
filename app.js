@@ -19,12 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initClock();
     initChart();
     initEventListeners();
-    fetchData(); // Initial jumpstart
+    
+    // Add a small delay for server spin-up before initial fetch
+    setTimeout(() => {
+        fetchData(); 
+    }, 2000);
     
     // Auto Refresh Loop
     setInterval(fetchData, CONFIG.refreshInterval);
     
-    // Hide loader after initial data
+    // Hide loader
     setTimeout(() => {
         document.getElementById('loader').style.opacity = '0';
         setTimeout(() => {
@@ -95,13 +99,24 @@ async function fetchData(retries = 3) {
         document.getElementById('api-status').classList.remove('offline');
         document.getElementById('api-status').classList.add('online');
     } catch (error) {
+        console.error('Fetch error:', error);
+        
+        // Detailed error message
+        let errorMsg = 'API Connection Error';
+        if (error.message.includes('status:')) {
+            errorMsg = `Server Error: ${error.message.split(' ').pop()}`;
+        } else if (error.message.includes('content-type')) {
+            errorMsg = 'Invalid API Response';
+        }
+
         if (retries > 0) {
             console.warn(`Fetch failed, retrying in 1s... (${retries} left)`, error);
+            showToast(`${errorMsg} - Retrying...`, 'info');
             setTimeout(() => fetchData(retries - 1), 1000);
             return;
         }
-        console.error('Fetch error:', error);
-        showToast('API Connection Error', 'error');
+        
+        showToast(errorMsg, 'error');
         document.getElementById('api-status').classList.remove('online');
         document.getElementById('api-status').classList.add('offline');
     }
