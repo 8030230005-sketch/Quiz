@@ -47,22 +47,36 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // --- API ROUTES ---
-  const apiRouter = express.Router();
+  // Request logging
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
 
-  apiRouter.get("/dht", (req, res) => {
+  // --- API ROUTES ---
+  console.log("[Server] Registering API routes...");
+
+  app.get("/api/health", (req, res) => {
+    console.log("[Server] Hit /api/health");
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
+
+  app.get("/api/dht", (req, res) => {
+    console.log("[Server] Hit /api/dht");
     state.sensor.temp += (Math.random() - 0.5) * 0.5;
     state.sensor.humidity += (Math.random() - 0.5) * 1;
     res.json(state.sensor);
   });
 
-  apiRouter.get("/dht/history", (req, res) => {
+  app.get("/api/dht/history", (req, res) => {
+    console.log("[Server] Hit /api/dht/history");
     res.json(state.history);
   });
 
-  apiRouter.get("/relay/:id/:action", (req, res) => {
+  app.get("/api/relay/:id/:action", (req, res) => {
+    console.log(`[Server] Hit /api/relay/${req.params.id}/${req.params.action}`);
     const { id, action } = req.params;
-    const relayId = parseInt(id);
+    const relayId = parseInt(id) as 1 | 2 | 3 | 4;
     
     if (state.relays.hasOwnProperty(relayId)) {
       const newState = action === "on" ? "on" : "off";
@@ -82,7 +96,8 @@ async function startServer() {
     }
   });
 
-  apiRouter.get("/status", (req, res) => {
+  app.get("/api/status", (req, res) => {
+    console.log("[Server] Hit /api/status");
     res.json({
       esp32: state.esp32,
       telegram: state.telegram,
@@ -90,14 +105,19 @@ async function startServer() {
     });
   });
 
-  apiRouter.get("/logs", (req, res) => {
+  app.get("/api/logs", (req, res) => {
+    console.log("[Server] Hit /api/logs");
     res.json({
       activity: state.logs,
       telegram: state.telegram.commands
     });
   });
 
-  app.use("/api", apiRouter);
+  // Special catch-all for /api that aren't matched
+  app.all("/api/*", (req, res) => {
+    console.log(`[Server] 404 on API route: ${req.url}`);
+    res.status(404).json({ error: "API route not found" });
+  });
 
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {

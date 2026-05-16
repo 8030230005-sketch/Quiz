@@ -65,18 +65,20 @@ function initEventListeners() {
 
 // --- API Calls ---
 
-async function fetchData() {
+async function fetchData(retries = 3) {
     const endpoints = ['dht', 'status', 'logs'];
     try {
         const results = await Promise.all(
             endpoints.map(async (ep) => {
                 const url = `${CONFIG.apiBase}/${ep}`;
                 const res = await fetch(url);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} on ${url}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status} on ${url}`);
+                }
                 const contentType = res.headers.get("content-type");
                 if (!contentType || !contentType.includes("application/json")) {
                     const text = await res.text();
-                    console.error(`Expected JSON for ${url} but got:`, text.substring(0, 100));
+                    console.error(`Expected JSON for ${url} but got content-type: ${contentType}. Body starts with: ${text.substring(0, 50)}`);
                     throw new Error(`Invalid content-type for ${url}`);
                 }
                 return res.json();
@@ -93,6 +95,11 @@ async function fetchData() {
         document.getElementById('api-status').classList.remove('offline');
         document.getElementById('api-status').classList.add('online');
     } catch (error) {
+        if (retries > 0) {
+            console.warn(`Fetch failed, retrying in 1s... (${retries} left)`, error);
+            setTimeout(() => fetchData(retries - 1), 1000);
+            return;
+        }
         console.error('Fetch error:', error);
         showToast('API Connection Error', 'error');
         document.getElementById('api-status').classList.remove('online');
